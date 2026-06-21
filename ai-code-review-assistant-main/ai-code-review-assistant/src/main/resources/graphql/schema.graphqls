@@ -1,0 +1,53 @@
+type User {
+    id: ID!
+    name: String!
+    email: String!
+    team: String
+    createdAt: String!
+    lastLogin: String!
+}
+
+type Session {
+    token: String!
+    user: User!
+}
+
+enum Role {
+    USER
+    AI
+}
+
+enum AiModel {
+    GROK
+    OLLAMA
+}
+
+type ChatSession {
+    sessionId: ID!
+    userId: ID!
+    title: String!
+    createdDate: String!
+    updatedDate: String!
+}
+
+type ChatMessage {
+    messageId: ID!
+    sessionId: ID!
+    role: Role!
+    message: String!
+    timestamp: String!
+}
+
+type Query {
+    me: User
+    getSessions(userId: ID!): [ChatSession!]!
+    getMessages(sessionId: ID!): [ChatMessage!]!
+}
+
+type Mutation {
+    login(name: String!, email: String!): Session!
+    logout: Boolean!
+    createNewSession(userId: ID!, title: String!): ChatSession!
+    saveMessage(sessionId: ID!, role: Role!, message: String!, model: AiModel): ChatMessage!
+    deleteSession(sessionId: ID!): Boolean!
+}
