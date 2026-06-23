@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: ai-code-review-assistant
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  graphql:
+    graphiql:
+      enabled: true
+
+  ai:
+    openai:
+      api-key: ${HUGGINGFACE_API_KEY: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}
+      base-url: https://api-inference.huggingface.co
+      chat:
+        options:
+          model: meta-llama/Llama-3.2-3B-Instruct
+          temperature: 0.2
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        options:
+          model: llama3
+          temperature: 0.2

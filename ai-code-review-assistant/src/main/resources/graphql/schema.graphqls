@@ -1,0 +1,88 @@
+type User {
+    id: ID!
+    name: String!
+    email: String!
+    team: String
+    createdAt: String!
+    lastLogin: String!
+}
+
+type Session {
+    token: String!
+    user: User!
+}
+
+enum Role {
+    USER
+    AI
+}
+
+enum AiModel {
+    HUGGING_FACE
+    OLLAMA
+}
+
+type ChatSession {
+    sessionId: ID!
+    userId: ID!
+    title: String!
+    createdDate: String!
+    updatedDate: String!
+}
+
+type ChatMessage {
+    messageId: ID!
+    sessionId: ID!
+    role: Role!
+    message: String!
+    timestamp: String!
+}
+
+type Query {
+    me: User
+    getSessions(userId: ID!): [ChatSession!]!
+    getMessages(sessionId: ID!): [ChatMessage!]!
+    getGapReport(sessionId: ID!): GapReport
+}
+
+enum IssueCategory {
+    LINT
+    SECURITY
+    COVERAGE
+    DEAD_CODE
+}
+
+enum Severity {
+    INFO
+    WARNING
+    ERROR
+    CRITICAL
+}
+
+type GapIssue {
+    category: IssueCategory!
+    severity: Severity!
+    summary: String!
+    lineNumbers: String
+    suggestedFix: String
+}
+
+type GapReport {
+    reportId: ID!
+    sessionId: ID!
+    qualityScore: Int!
+    code: String!
+    summary: String!
+    issues: [GapIssue!]!
+    suggestedActions: [String!]!
+}
+
+type Mutation {
+    login(name: String!, email: String!): Session!
+    logout: Boolean!
+    createNewSession(userId: ID!, title: String!): ChatSession!
+    saveMessage(sessionId: ID!, role: Role!, message: String!, model: AiModel): ChatMessage!
+    deleteSession(sessionId: ID!): Boolean!
+    reviewCode(sessionId: ID!, code: String!, language: String!, model: AiModel!): GapReport!
+    fixCode(sessionId: ID!, model: AiModel!): String!
+}
