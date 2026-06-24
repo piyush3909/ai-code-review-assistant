@@ -1,6 +1,6 @@
 import { useState, useRef, useLayoutEffect } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
-import { GET_SESSIONS_QUERY, CREATE_NEW_SESSION_MUTATION } from '../graphql/operations';
+import { GET_SESSIONS_QUERY, CREATE_NEW_SESSION_MUTATION, LOGOUT_MUTATION } from '../graphql/operations';
 import { Plus, MessageSquare, LogOut, Code2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
@@ -34,6 +34,17 @@ export default function Sidebar({ activeSessionId, onSelectSession }: SidebarPro
       refetch();
       onSelectSession(res.createNewSession.sessionId);
       setIsCreating(false);
+    }
+  });
+
+  const [logout] = useMutation(LOGOUT_MUTATION, {
+    onCompleted: () => {
+      localStorage.clear();
+      navigate('/login');
+    },
+    onError: () => {
+      localStorage.clear();
+      navigate('/login');
     }
   });
 
@@ -71,8 +82,7 @@ export default function Sidebar({ activeSessionId, onSelectSession }: SidebarPro
   };
 
   const handleLogout = () => {
-    localStorage.clear();
-    navigate('/login');
+    logout();
   };
 
   return (

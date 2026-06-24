@@ -1,21 +1,38 @@
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
-import ChatArea from '../components/ChatArea';
+import { useQuery } from '@apollo/client';
 import gsap from 'gsap';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import ChatArea from '../components/ChatArea';
+import Sidebar from '../components/Sidebar';
+import { ME_QUERY } from '../graphql/operations';
 import './ChatLayout.css';
 
 export default function ChatLayout() {
   const navigate = useNavigate();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const emptyStateRef = useRef<HTMLDivElement>(null);
-  
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+  const token = localStorage.getItem('token');
+
+  const { data, loading: loadingMe, error: meError } = useQuery(ME_QUERY, {
+    skip: !token,
+    fetchPolicy: 'network-only',
+    onError: () => {
+      localStorage.clear();
       navigate('/login');
     }
-  }, [navigate]);
+  });
+  
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    if (!loadingMe && !meError && data && !data.me) {
+      localStorage.clear();
+      navigate('/login');
+    }
+  }, [navigate, token, loadingMe, data, meError]);
 
   useLayoutEffect(() => {
     if (!activeSessionId && emptyStateRef.current) {

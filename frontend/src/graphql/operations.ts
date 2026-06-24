@@ -70,3 +70,9 @@ export const ME_QUERY = gql`
     }
   }
 `;
+
+export const LOGOUT_MUTATION = gql`
+  mutation Logout {
+    logout
+  }
+`;
