@@ -2,3 +2,4 @@
 NEON_DB_URL=jdbc:postgresql://ep-xxxx-xxxx-xxxxx.eu-west-2.aws.neon.tech/neondb?sslmode=require
 NEON_DB_USERNAME=uname
 NEON_DB_PASSWORD=pass
+JWT_SECRET=super-long-random-secret-32-characters-minimum

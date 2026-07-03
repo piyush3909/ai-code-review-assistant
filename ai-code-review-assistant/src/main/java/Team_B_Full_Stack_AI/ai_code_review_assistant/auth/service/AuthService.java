@@ -1,19 +1,29 @@
 package Team_B_Full_Stack_AI.ai_code_review_assistant.auth.service;
 
-import Team_B_Full_Stack_AI.ai_code_review_assistant.dto.Session;
-import Team_B_Full_Stack_AI.ai_code_review_assistant.dto.UserDto;
-import Team_B_Full_Stack_AI.ai_code_review_assistant.database.entity.UserEntity;
-import Team_B_Full_Stack_AI.ai_code_review_assistant.database.repository.UserRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import Team_B_Full_Stack_AI.ai_code_review_assistant.database.entity.UserEntity;
+import Team_B_Full_Stack_AI.ai_code_review_assistant.database.repository.UserRepository;
+import Team_B_Full_Stack_AI.ai_code_review_assistant.dto.Session;
+import Team_B_Full_Stack_AI.ai_code_review_assistant.dto.UserDto;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
 @Service
 public class AuthService {
@@ -23,38 +33,22 @@ public class AuthService {
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
 
     private final UserRepository userRepository;
-    private final Map<String, SessionDetails> sessionStore = new ConcurrentHashMap<>();
+    // blacklist for revoked tokens (optional). We do NOT rely on this for active sessions.
+    private final Map<String, Date> tokenBlacklist = new ConcurrentHashMap<>();
+    private final Key signingKey;
 
-    public static class SessionDetails {
-        private final UUID userId;
-        private final LocalDateTime createdAt;
-        private LocalDateTime lastAccessedAt;
-
-        public SessionDetails(UUID userId) {
-            this.userId = userId;
-            this.createdAt = LocalDateTime.now();
-            this.lastAccessedAt = LocalDateTime.now();
-        }
-
-        public UUID getUserId() {
-            return userId;
-        }
-
-        public LocalDateTime getCreatedAt() {
-            return createdAt;
-        }
-
-        public LocalDateTime getLastAccessedAt() {
-            return lastAccessedAt;
-        }
-
-        public void updateLastAccessed() {
-            this.lastAccessedAt = LocalDateTime.now();
-        }
-    }
-
-    public AuthService(UserRepository userRepository) {
+    public AuthService(UserRepository userRepository, @Value("${jwt.secret}") String secret) {
         this.userRepository = userRepository;
+        // String secret = System.getenv("JWT_SECRET");
+        if (secret == null) {
+            secret = System.getProperty("JWT_SECRET");
+        }
+        if (secret == null || secret.length() < 32) {
+            // Fallback to an insecure default but log a warning.
+            log.warn("JWT_SECRET not set or too short; using insecure default secret. Set JWT_SECRET in your .env for production.");
+            secret = "please-change-this-secret-to-a-32-byte-minimum-value";
+        }
+        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     @Transactional
@@ -86,10 +80,9 @@ public class AuthService {
         user.setLastLogin(LocalDateTime.now());
         UserEntity savedUser = userRepository.save(user);
 
-        String token = UUID.randomUUID().toString();
-        sessionStore.put(token, new SessionDetails(savedUser.getId()));
+        String token = generateToken(savedUser.getId());
 
-        log.info("User {} logged in successfully. Session token generated.", savedUser.getId());
+        log.info("User {} logged in successfully. JWT issued.", savedUser.getId());
         return new Session(token, mapToDto(savedUser));
     }
 
@@ -97,49 +90,75 @@ public class AuthService {
         if (token == null) {
             return null;
         }
-        SessionDetails details = sessionStore.get(token);
-        if (details == null) {
-            return null;
+
+        // Check blacklist first
+        Date blacklistedUntil = tokenBlacklist.get(token);
+        if (blacklistedUntil != null) {
+            if (blacklistedUntil.after(new Date())) {
+                return null;
+            } else {
+                tokenBlacklist.remove(token);
+            }
         }
 
-        // Session Expiration check
-        if (details.getLastAccessedAt().plusMinutes(SESSION_TIMEOUT_MINUTES).isBefore(LocalDateTime.now())) {
-            sessionStore.remove(token);
-            log.info("Session token {} expired due to inactivity", token);
+        try {
+            Claims claims = Jwts.parserBuilder().setSigningKey(signingKey).build().parseClaimsJws(token).getBody();
+            Date exp = claims.getExpiration();
+            if (exp != null && exp.before(new Date())) {
+                return null;
+            }
+            String userIdStr = claims.getSubject();
+            UUID userId = UUID.fromString(userIdStr);
+            return userRepository.findById(userId).orElse(null);
+        } catch (JwtException | IllegalArgumentException e) {
+            log.info("Invalid JWT token: {}", e.getMessage());
             return null;
         }
-
-        details.updateLastAccessed();
-        return userRepository.findById(details.getUserId()).orElse(null);
     }
 
     public boolean logout(String token) {
         if (token == null) {
             return false;
         }
-        SessionDetails removed = sessionStore.remove(token);
-        if (removed != null) {
-            log.info("Session token {} explicitly invalidated (logged out)", token);
+        try {
+            Claims claims = Jwts.parserBuilder().setSigningKey(signingKey).build().parseClaimsJws(token).getBody();
+            Date exp = claims.getExpiration();
+            // Add to blacklist until token's natural expiration to prevent reuse
+            tokenBlacklist.put(token, exp != null ? exp : new Date(System.currentTimeMillis() + SESSION_TIMEOUT_MINUTES * 60L * 1000L));
+            log.info("JWT token explicitly blacklisted (logged out)");
             return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            log.info("Logout called with invalid token: {}", e.getMessage());
+            return false;
         }
-        return false;
     }
 
-    @Scheduled(fixedRate = 60000) // Sweeps every 1 minute
-    public void cleanupExpiredSessions() {
-        LocalDateTime threshold = LocalDateTime.now().minusMinutes(SESSION_TIMEOUT_MINUTES);
-        sessionStore.entrySet().removeIf(entry -> {
-            boolean expired = entry.getValue().getLastAccessedAt().isBefore(threshold);
+    @Scheduled(fixedRate = 60000) // Sweep blacklisted tokens every minute
+    public void cleanupExpiredBlacklistedTokens() {
+        Date now = new Date();
+        tokenBlacklist.entrySet().removeIf(entry -> {
+            boolean expired = entry.getValue().before(now);
             if (expired) {
-                log.info("Scheduled sweep: Session token {} removed due to expiration", entry.getKey());
+                log.info("Scheduled sweep: Blacklisted token {} removed after expiration", entry.getKey());
             }
             return expired;
         });
     }
 
-    // Retained for any direct verification needs
-    public Map<String, SessionDetails> getSessionStore() {
-        return sessionStore;
+    // Expose blacklist for verification/debugging if needed
+    public Map<String, Date> getTokenBlacklist() {
+        return tokenBlacklist;
+    }
+
+    private String generateToken(UUID userId) {
+        Date now = new Date();
+        Date exp = new Date(now.getTime() + SESSION_TIMEOUT_MINUTES * 60L * 1000L);
+        return Jwts.builder()
+                .setSubject(userId.toString())
+                .setIssuedAt(now)
+                .setExpiration(exp)
+                .signWith(signingKey)
+                .compact();
     }
 
     public UserDto mapToDto(UserEntity entity) {
