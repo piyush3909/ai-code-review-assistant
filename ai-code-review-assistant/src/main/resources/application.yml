@@ -34,3 +34,6 @@ spring:
         options:
           model: llama3
           temperature: 0.2
+  
+jwt:
+  secret: ${JWT_SECRET}

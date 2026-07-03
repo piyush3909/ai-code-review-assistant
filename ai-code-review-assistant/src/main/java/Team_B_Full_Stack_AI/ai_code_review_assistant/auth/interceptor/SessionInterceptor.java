@@ -1,16 +1,18 @@
 package Team_B_Full_Stack_AI.ai_code_review_assistant.auth.interceptor;
 
-import Team_B_Full_Stack_AI.ai_code_review_assistant.auth.service.AuthService;
-import Team_B_Full_Stack_AI.ai_code_review_assistant.database.entity.UserEntity;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.graphql.server.WebGraphQlInterceptor;
 import org.springframework.graphql.server.WebGraphQlRequest;
 import org.springframework.graphql.server.WebGraphQlResponse;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
+
+import Team_B_Full_Stack_AI.ai_code_review_assistant.auth.service.AuthService;
+import Team_B_Full_Stack_AI.ai_code_review_assistant.database.entity.UserEntity;
+import io.jsonwebtoken.JwtException;
 import reactor.core.publisher.Mono;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 @Component
 public class SessionInterceptor implements WebGraphQlInterceptor {
@@ -46,11 +48,15 @@ public class SessionInterceptor implements WebGraphQlInterceptor {
         }
 
         if (token != null) {
-            UserEntity user = authService.getUserFromToken(token);
-            if (user != null) {
-                final String finalToken = token;
-                request.configureExecutionInput((executionInput, builder) ->
-                        builder.graphQLContext(Map.of("currentUser", user, "currentToken", finalToken)).build());
+            try {
+                UserEntity user = authService.getUserFromToken(token);
+                if (user != null) {
+                    final String finalToken = token;
+                    request.configureExecutionInput((executionInput, builder) ->
+                            builder.graphQLContext(Map.of("currentUser", user, "currentToken", finalToken)).build());
+                }
+            } catch (JwtException e) {
+                // invalid token - ignore and continue without user
             }
         }
 
