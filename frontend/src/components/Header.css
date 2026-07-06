@@ -162,3 +162,80 @@
   font-size: 0.75rem;
   font-weight: 700;
 }
+
+/* ── Mobile Menu Toggle Button (Hidden on Desktop) ── */
+.header-mobile-menu-btn {
+  display: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.header-mobile-menu-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #fff;
+}
+
+/* ── Tablet & Mobile Responsive Header ── */
+@media (max-width: 1023px) {
+  .header-mobile-menu-btn {
+    display: flex;
+  }
+
+  .app-header {
+    padding: 0 1.25rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .app-header {
+    padding: 0 0.85rem;
+    height: 58px;
+  }
+
+  .header-left-container {
+    gap: 0.6rem;
+  }
+
+  .header-brand-badge {
+    padding: 0.35rem 0.6rem;
+  }
+
+  .header-brand-text {
+    display: none; /* Keep just the sparkle icon on very small screens */
+  }
+
+  .header-app-title {
+    font-size: 0.92rem;
+  }
+
+  .header-pro-tag {
+    display: none;
+  }
+
+  .header-engine-text {
+    display: none; /* Keep just the live dot and icon on mobile */
+  }
+
+  .header-engine-badge {
+    padding: 0.35rem 0.6rem;
+    gap: 0.35rem;
+  }
+
+  .header-profile-btn span {
+    display: none; /* Show only avatar circle on mobile */
+  }
+
+  .header-profile-btn {
+    padding: 0.25rem;
+  }
+}

@@ -103,3 +103,27 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ── Responsive ChatLayout & Empty State ── */
+@media (max-width: 1023px) {
+  .chat-main {
+    width: 100%;
+    max-width: 100vw;
+  }
+}
+
+@media (max-width: 639px) {
+  .empty-state-content {
+    padding: 1.5rem 1rem;
+    max-width: 92%;
+    gap: 1rem;
+  }
+
+  .empty-state-content h2 {
+    font-size: 1.6rem;
+  }
+
+  .empty-state-content p {
+    font-size: 0.85rem;
+  }
+}

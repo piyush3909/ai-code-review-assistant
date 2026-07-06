@@ -97,3 +97,42 @@
   color: #64748b;
   font-weight: 500;
 }
+
+/* ── Responsive Footer (Tablet & Mobile) ── */
+@media (max-width: 1023px) {
+  .app-footer {
+    padding: 0 1.25rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .app-footer {
+    padding: 0 0.85rem;
+    height: 48px;
+  }
+
+  .footer-center {
+    display: none; /* Hide keyboard shortcuts on touch devices */
+  }
+
+  .footer-left {
+    flex: 1;
+  }
+
+  .footer-right {
+    flex: 1.5;
+  }
+
+  .footer-copyright {
+    display: none; /* Keep guidelines button and status dot visible */
+  }
+
+  .footer-status-indicator {
+    font-size: 0.72rem;
+  }
+
+  .footer-guidelines-btn {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.72rem;
+  }
+}

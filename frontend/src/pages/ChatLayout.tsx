@@ -16,6 +16,7 @@ export default function ChatLayout() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showGuidelinesModal, setShowGuidelinesModal] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   
   const userId = localStorage.getItem('userId');
 
@@ -45,12 +46,17 @@ export default function ChatLayout() {
 
   return (
     <div className="page-container">
-      <Header onOpenProfile={() => setShowProfileModal(true)} />
+      <Header 
+        onOpenProfile={() => setShowProfileModal(true)} 
+        onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+      />
       <div className="chat-layout">
       <Sidebar 
         activeSessionId={activeSessionId} 
         onSelectSession={setActiveSessionId} 
         onOpenProfile={() => setShowProfileModal(true)}
+        isMobileOpen={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
       <div className="chat-main">
         {activeSessionId ? (

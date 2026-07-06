@@ -312,3 +312,72 @@
   box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
   transform: translateY(-1px);
 }
+
+/* ── Responsive Profile Modal (Mobile & Tablet) ── */
+@media (max-width: 639px) {
+  .profile-modal-card {
+    max-width: 95vw;
+    max-height: 92vh;
+  }
+
+  .profile-modal-header {
+    padding: 1.25rem 1.25rem 1rem;
+    gap: 1rem;
+  }
+
+  .profile-modal-avatar {
+    width: 54px;
+    height: 54px;
+    font-size: 1.4rem;
+  }
+
+  .profile-modal-title h2 {
+    font-size: 1.2rem;
+  }
+
+  .profile-modal-body {
+    padding: 1.25rem 1.25rem;
+    gap: 1.25rem;
+  }
+
+  /* Switch 2-col info grid to single column on mobile */
+  .profile-grid {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  .preference-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .preference-control {
+    width: 100%;
+  }
+
+  .preference-control select {
+    width: 100%;
+  }
+
+  .model-toggle-pills {
+    width: 100%;
+    display: flex;
+  }
+
+  .model-pill-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .profile-modal-footer {
+    padding: 1rem 1.25rem;
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+  }
+
+  .profile-logout-btn, .profile-done-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

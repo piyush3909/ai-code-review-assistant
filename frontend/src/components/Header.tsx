@@ -1,17 +1,27 @@
-import { Sparkles, Cpu } from 'lucide-react';
+import { Sparkles, Cpu, Menu } from 'lucide-react';
 import './Header.css';
 
 interface HeaderProps {
   onOpenProfile?: () => void;
+  onToggleMobileSidebar?: () => void;
 }
 
-export default function Header({ onOpenProfile }: HeaderProps) {
+export default function Header({ onOpenProfile, onToggleMobileSidebar }: HeaderProps) {
   const userName = localStorage.getItem('userName') || 'Developer';
   const currentModel = localStorage.getItem('default-ai-model') === 'HUGGING_FACE' ? 'HuggingFace Llama' : 'Ollama Vision';
 
   return (
     <header className="app-header">
       <div className="header-left-container">
+        <button 
+          className="header-mobile-menu-btn" 
+          onClick={onToggleMobileSidebar}
+          title="Open navigation menu"
+          aria-label="Open navigation menu"
+        >
+          <Menu size={20} />
+        </button>
+
         <div className="header-brand-badge" onClick={onOpenProfile} title="AI Assistant Core">
           <Sparkles size={18} className="header-brand-icon" />
           <span className="header-brand-text">AI Core</span>
