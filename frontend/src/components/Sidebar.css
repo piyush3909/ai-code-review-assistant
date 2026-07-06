@@ -8,6 +8,7 @@
   border-radius: 0;
   box-shadow: none;
   position: relative;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-header {
@@ -170,6 +171,15 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+  border-radius: var(--radius-md);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.user-info:hover {
+  background: var(--bg-surface-hover);
+  transform: translateY(-1px);
 }
 
 .user-avatar {
@@ -203,3 +213,73 @@
   color: var(--danger);
   background: var(--danger-muted);
 }
+
+/* ── Sidebar brand row & toggle ── */
+.sidebar-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.sidebar-top-toggle-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.sidebar-top-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: scale(1.05);
+}
+
+/* ── Collapsed Sidebar ── */
+.sidebar.collapsed {
+  width: 68px;
+}
+
+.sidebar.collapsed .sidebar-header {
+  padding: 1.25rem 0.5rem;
+  align-items: center;
+}
+
+.sidebar.collapsed .sidebar-brand-row {
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-brand {
+  gap: 0;
+}
+
+.sidebar.collapsed .new-chat-btn {
+  padding: 0.6rem;
+  justify-content: center;
+}
+
+.sidebar.collapsed .session-item {
+  padding: 0.55rem;
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  padding: 0.875rem 0.5rem;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.sidebar.collapsed .user-info {
+  justify-content: center;
+}
+

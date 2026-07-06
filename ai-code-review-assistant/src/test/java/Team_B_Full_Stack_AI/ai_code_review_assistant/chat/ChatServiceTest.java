@@ -6,6 +6,8 @@ import Team_B_Full_Stack_AI.ai_code_review_assistant.chat.entity.Role;
 import Team_B_Full_Stack_AI.ai_code_review_assistant.chat.repository.ChatMessageRepository;
 import Team_B_Full_Stack_AI.ai_code_review_assistant.chat.repository.ChatSessionRepository;
 import Team_B_Full_Stack_AI.ai_code_review_assistant.chat.service.ChatService;
+import Team_B_Full_Stack_AI.ai_code_review_assistant.review.entity.GapReportEntity;
+import Team_B_Full_Stack_AI.ai_code_review_assistant.review.repository.GapReportRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +32,9 @@ class ChatServiceTest {
 
     @Autowired
     private ChatMessageRepository chatMessageRepository;
+
+    @Autowired
+    private GapReportRepository gapReportRepository;
 
     private UUID testUserId;
 
@@ -132,6 +137,26 @@ class ChatServiceTest {
 
         assertThatThrownBy(() -> chatService.saveMessage(sessionId, Role.USER, ""))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Message content cannot be null or empty");
+                .hasMessageContaining("Message content or attached image cannot be null or empty");
+    }
+
+    @Test
+    void testDeleteSessionRemovesMessagesAndReports() {
+        ChatSessionEntity session = chatService.createNewSession(testUserId, "Session to delete");
+        chatService.saveMessage(session.getSessionId(), Role.USER, "Hello from the session");
+
+        GapReportEntity report = new GapReportEntity();
+        report.setSessionId(session.getSessionId());
+        report.setQualityScore(82);
+        report.setCode("public class Example {}\n");
+        report.setSummary("A sample review report");
+        report.setSuggestedActions(List.of("Add tests"));
+        gapReportRepository.save(report);
+
+        chatService.deleteSession(session.getSessionId());
+
+        assertThat(chatSessionRepository.findById(session.getSessionId())).isEmpty();
+        assertThat(chatMessageRepository.findBySessionIdOrderByTimestampAsc(session.getSessionId())).isEmpty();
+        assertThat(gapReportRepository.findBySessionId(session.getSessionId())).isEmpty();
     }
 }

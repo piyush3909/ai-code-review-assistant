@@ -15,6 +15,7 @@ import org.springframework.graphql.data.method.annotation.ContextValue;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.ObjectUtils;
 import java.util.List;
 import java.util.UUID;
 
@@ -83,6 +84,7 @@ public class ChatController {
             @Argument Role role,
             @Argument String message,
             @Argument AiModel model,
+            @Argument String imageBase64,
             @ContextValue(name = "currentUser", required = false) UserEntity currentUser) {
         
         if (currentUser == null) {
@@ -91,13 +93,13 @@ public class ChatController {
         ChatSessionEntity session = chatService.getSessionById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Chat session not found with ID: " + sessionId));
         
-        if (!session.getUserId().equals(currentUser.getId())) {
+        if (!ObjectUtils.nullSafeEquals(session.getUserId(), currentUser.getId())) {
             throw new UnauthorizedException("Unauthorized access to save messages");
         }
         
-        ChatMessageEntity savedUserMessage = chatService.saveMessage(sessionId, role, message);
+        ChatMessageEntity savedUserMessage = chatService.saveMessage(sessionId, role, message, imageBase64);
         
-        if (role == Role.USER && model != null) {
+        if (ObjectUtils.nullSafeEquals(role, Role.USER) && model != null) {
             List<ChatMessageEntity> history = chatService.getMessages(sessionId);
             try {
                 String aiResponse = aiService.generateReview(history, model);

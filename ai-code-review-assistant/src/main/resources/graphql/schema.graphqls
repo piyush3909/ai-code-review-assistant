@@ -36,6 +36,7 @@ type ChatMessage {
     role: Role!
     message: String!
     timestamp: String!
+    imageBase64: String
 }
 
 type Query {
@@ -78,10 +79,11 @@ type GapReport {
 }
 
 type Mutation {
-    login(name: String!, email: String!): Session!
+    signup(name: String!, email: String!, password: String!): Session!
+    login(email: String!, password: String!): Session!
     logout: Boolean!
     createNewSession(userId: ID!, title: String!): ChatSession!
-    saveMessage(sessionId: ID!, role: Role!, message: String!, model: AiModel): ChatMessage!
+    saveMessage(sessionId: ID!, role: Role!, message: String!, model: AiModel, imageBase64: String): ChatMessage!
     deleteSession(sessionId: ID!): Boolean!
     reviewCode(sessionId: ID!, code: String!, language: String!, model: AiModel!): GapReport!
     fixCode(sessionId: ID!, model: AiModel!): String!

@@ -1,178 +1,167 @@
-import { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import { useState } from 'react';
 import { useMutation } from '@apollo/client';
 import { useNavigate } from 'react-router-dom';
-import { LOGIN_MUTATION } from '../graphql/operations';
-import { Code2, ArrowRight, Loader2, X } from 'lucide-react';
-import gsap from 'gsap';
-import LetterGlitch from '../components/LetterGlitch';
-import GlitchText from '../components/GlitchText';
+import { z } from 'zod';
+import { LOGIN_MUTATION, SIGNUP_MUTATION } from '../graphql/operations';
+import { Code2, ArrowRight, Loader2, Sparkles, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 import './Login.css';
 
+const loginSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+const signupSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string().min(1, 'Please confirm your password'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 export default function Login() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
-  
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   
   const navigate = useNavigate();
-  const cardRef = useRef<HTMLDivElement>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
-  const actionsRef = useRef<HTMLDivElement>(null);
 
-  useLayoutEffect(() => {
-    // Initial hero load animations
-    if (heroRef.current) {
-      const heroEls = heroRef.current.querySelectorAll('.hero-logo, .hero-title, .hero-subtitle, .cta-button');
-      gsap.fromTo(heroEls,
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 1, stagger: 0.15, ease: 'power4.out', delay: 0.2 }
-      );
-    }
-    
-    // Top right actions fade in
-    if (actionsRef.current) {
-      gsap.fromTo(actionsRef.current,
-        { opacity: 0, x: 20 },
-        { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out', delay: 0.5 }
-      );
-    }
-  }, []);
+  const handleAuthSuccess = (data: any, isSignupMode: boolean) => {
+    const authData = isSignupMode ? data.signup : data.login;
+    localStorage.setItem('token', authData.token);
+    localStorage.setItem('userId', authData.user.id);
+    localStorage.setItem('userName', authData.user.name);
+    navigate('/chat');
+  };
 
-  // Modal entrance animation
-  useEffect(() => {
-    if (isModalOpen && cardRef.current) {
-      const formEls = cardRef.current.querySelectorAll('.login-header, .input-group, .login-button, .toggle-mode');
-      
-      // Animate the card itself
-      gsap.fromTo(cardRef.current,
-        { opacity: 0, scale: 0.9, y: 20 },
-        { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: 'back.out(1.2)' }
-      );
-      
-      // Stagger animate the form fields inside
-      gsap.fromTo(formEls,
-        { opacity: 0, y: 15 },
-        { opacity: 1, y: 0, duration: 0.4, stagger: 0.08, ease: 'power2.out', delay: 0.2 }
-      );
-    }
-  }, [isModalOpen, isSignUp]); // Re-animate form fields slightly when switching modes
-  
-  const [login, { loading }] = useMutation(LOGIN_MUTATION, {
-    onCompleted: (data: any) => {
-      localStorage.setItem('token', data.login.token);
-      localStorage.setItem('userId', data.login.user.id);
-      localStorage.setItem('userName', data.login.user.name);
-      navigate('/chat');
-    },
-    onError: (err: any) => {
-      setError(err.message || 'An error occurred during authentication');
-    }
+  const [login, { loading: loginLoading }] = useMutation(LOGIN_MUTATION, {
+    onCompleted: (data) => handleAuthSuccess(data, false),
+    onError: (err) => setError(err.message || 'An error occurred during authentication'),
   });
+
+  const [signup, { loading: signupLoading }] = useMutation(SIGNUP_MUTATION, {
+    onCompleted: (data) => handleAuthSuccess(data, true),
+    onError: (err) => setError(err.message || 'An error occurred during registration'),
+  });
+
+  const loading = loginLoading || signupLoading;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSignUp && !name) {
-      setError('Please provide your name');
-      return;
-    }
-    if (!email) {
-      setError('Please provide your email');
-      return;
-    }
     setError('');
-    login({ variables: { name: name || 'User', email } });
-  };
+    setFieldErrors({});
 
-  const openModal = (mode: 'login' | 'signup') => {
-    setIsSignUp(mode === 'signup');
-    setError('');
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    if (loading) return; // Prevent closing while authenticating
-    
-    // Animate out
-    if (cardRef.current) {
-      gsap.to(cardRef.current, {
-        opacity: 0, 
-        scale: 0.95, 
-        y: 10, 
-        duration: 0.3, 
-        ease: 'power2.in',
-        onComplete: () => setIsModalOpen(false)
-      });
+    if (isSignUp) {
+      const result = signupSchema.safeParse({ name, email, password, confirmPassword });
+      if (!result.success) {
+        const errors: Record<string, string> = {};
+        result.error.issues.forEach((issue) => {
+          if (issue.path[0]) {
+            errors[issue.path[0] as string] = issue.message;
+          }
+        });
+        setFieldErrors(errors);
+        return;
+      }
+      signup({ variables: { name: name.trim(), email: email.trim(), password } });
     } else {
-      setIsModalOpen(false);
+      const result = loginSchema.safeParse({ email, password });
+      if (!result.success) {
+        const errors: Record<string, string> = {};
+        result.error.issues.forEach((issue) => {
+          if (issue.path[0]) {
+            errors[issue.path[0] as string] = issue.message;
+          }
+        });
+        setFieldErrors(errors);
+        return;
+      }
+      login({ variables: { email: email.trim(), password } });
     }
   };
 
   const toggleMode = () => {
     setIsSignUp(!isSignUp);
     setError('');
+    setFieldErrors({});
   };
 
   return (
-    <div className="landing-layout">
-      {/* Background Section */}
-      <div className="hero-background">
-        <LetterGlitch
-          glitchSpeed={50}
-          centerVignette={true}
-          outerVignette={true}
-          smooth={true}
-        />
-      </div>
+    <div className="page-container">
+      <Header />
+      <div className="login-split-layout">
+        {/* 70% Left Section: Hero & Illustration */}
+        <div className="login-hero-section">
+          <div className="hero-top-bar">
+            <div className="brand-logo">
+              <div className="brand-icon-wrapper">
+                <Code2 size={24} />
+              </div>
+              <span className="brand-name">AI Code Review Assistant</span>
+            </div>
+            <div className="badge-pill">
+              <Sparkles size={14} className="badge-icon" />
+              <span>Next-Gen AI Pair Programming</span>
+            </div>
+          </div>
 
-      {/* Top Right Actions */}
-      <div ref={actionsRef} className="top-right-actions">
-        <button onClick={() => openModal('login')} className="nav-btn ghost">Log In</button>
-        <button onClick={() => openModal('signup')} className="nav-btn primary">Sign Up</button>
-      </div>
-
-      {/* Centered Hero Content */}
-      <div className="centered-hero" ref={heroRef}>
-        <div className="hero-logo">
-          <Code2 size={56} />
-        </div>
-        <div className="hero-title">
-          <GlitchText speed={1.2} enableOnHover={false}>Elevate Your Code</GlitchText>
-        </div>
-        <p className="hero-subtitle">
-          Experience the future of code reviews powered by intelligent, context-aware AI.
-        </p>
-        <button onClick={() => openModal('signup')} className="cta-button">
-          Get Started <ArrowRight size={18} />
-        </button>
-      </div>
-
-      {/* Modal Overlay for Form */}
-      {isModalOpen && (
-        <div className="modal-overlay" onMouseDown={closeModal}>
-          <div 
-            ref={cardRef} 
-            className="login-card modal-card" 
-            onMouseDown={e => e.stopPropagation()}
-            style={{ opacity: 0 }}
-          >
-            <button className="close-modal-btn" onClick={closeModal} disabled={loading}>
-              <X size={20} />
-            </button>
+          <div className="hero-content-center">
+            <h1 className="hero-main-title">Elevate Your Code Quality</h1>
+            <p className="hero-main-subtitle">
+              Experience intelligent, context-aware code analysis, instant vulnerability scanning, and automated refactoring guidance.
+            </p>
             
-            <div className="login-header">
-              <h1>{isSignUp ? 'Create an Account' : 'Welcome Back'}</h1>
-              <p className="subtitle">
-                {isSignUp ? 'Start reviewing code instantly' : 'Sign in to your intelligent assistant'}
+            <div className="hero-illustration-container">
+              <img 
+                src="/login-illustration.svg" 
+                alt="AI Code Review Assistant Workflow" 
+                className="hero-svg-img" 
+              />
+            </div>
+
+            <div className="hero-feature-tags">
+              <div className="feature-tag">
+                <CheckCircle2 size={16} className="tag-icon" />
+                <span>Instant Vulnerability Detection</span>
+              </div>
+              <div className="feature-tag">
+                <CheckCircle2 size={16} className="tag-icon" />
+                <span>Deep Contextual Analysis</span>
+              </div>
+              <div className="feature-tag">
+                <CheckCircle2 size={16} className="tag-icon" />
+                <span>Automated Unit Test Generation</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 30% Right Section: Login/Signup Form */}
+        <div className="login-form-section">
+          <div className="form-container glass-panel">
+            <div className="form-header">
+              <h2>{isSignUp ? 'Create Account' : 'Welcome Back'}</h2>
+              <p className="form-subtitle">
+                {isSignUp ? 'Sign up to start reviewing code instantly' : 'Sign in to access your AI assistant'}
               </p>
             </div>
 
-            {error && <div className="error-message animate-fade-in">{error}</div>}
+            {error && <div className="error-alert">{error}</div>}
 
-            <form onSubmit={handleSubmit} className="login-form">
+            <form onSubmit={handleSubmit} className="auth-form" noValidate>
               {isSignUp && (
-                <div className="input-group">
+                <div className="form-group">
                   <label htmlFor="name">Full Name</label>
                   <input 
                     id="name"
@@ -182,9 +171,11 @@ export default function Login() {
                     placeholder="John Doe"
                     disabled={loading}
                   />
+                  {fieldErrors.name && <span className="field-error">{fieldErrors.name}</span>}
                 </div>
               )}
-              <div className="input-group">
+
+              <div className="form-group">
                 <label htmlFor="email">Email Address</label>
                 <input 
                   id="email"
@@ -194,25 +185,77 @@ export default function Login() {
                   placeholder="john@example.com"
                   disabled={loading}
                 />
+                {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
               </div>
-              
-              <button type="submit" disabled={loading} className="login-button">
-                {loading ? <Loader2 className="spinner" size={20} /> : (isSignUp ? 'Sign Up' : 'Continue')}
-                {!loading && <ArrowRight size={20} />}
-              </button>
 
-              <div className="toggle-mode">
-                <p>
-                  {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-                  <button type="button" onClick={toggleMode} className="toggle-btn" disabled={loading}>
-                    {isSignUp ? 'Sign In' : 'Sign Up'}
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <div className="password-input-wrapper">
+                  <input 
+                    id="password"
+                    type={showPassword ? "text" : "password"} 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    disabled={loading}
+                  />
+                  <button 
+                    type="button" 
+                    className="password-toggle-btn" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
-                </p>
+                </div>
+                {fieldErrors.password && <span className="field-error">{fieldErrors.password}</span>}
               </div>
+
+              {isSignUp && (
+                <div className="form-group">
+                  <label htmlFor="confirmPassword">Confirm Password</label>
+                  <div className="password-input-wrapper">
+                    <input 
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"} 
+                      value={confirmPassword} 
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      disabled={loading}
+                    />
+                    <button 
+                      type="button" 
+                      className="password-toggle-btn" 
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {fieldErrors.confirmPassword && <span className="field-error">{fieldErrors.confirmPassword}</span>}
+                </div>
+              )}
+              
+              <button type="submit" disabled={loading} className="submit-button">
+                {loading ? <Loader2 className="spinner" size={20} /> : (isSignUp ? 'Sign Up' : 'Continue')}
+                {!loading && <ArrowRight size={18} />}
+              </button>
             </form>
+
+            <div className="form-footer">
+              <p>
+                {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+                <button type="button" onClick={toggleMode} className="mode-toggle-btn" disabled={loading}>
+                  {isSignUp ? 'Sign In' : 'Sign Up'}
+                </button>
+              </p>
+            </div>
           </div>
         </div>
-      )}
+      </div>
+      <Footer />
     </div>
   );
 }
+
+

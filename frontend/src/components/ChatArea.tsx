@@ -1,21 +1,19 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_MESSAGES_QUERY, SAVE_MESSAGE_MUTATION, REVIEW_CODE_MUTATION, GET_GAP_REPORT_QUERY } from '../graphql/operations';
 import { Send, Loader2, User, Cpu, ShieldAlert, Zap, FileCode, HelpCircle, Paperclip, FileText, X, Cloud } from 'lucide-react';
-import gsap from 'gsap';
 import './ChatArea.css';
 import MarkdownRenderer from './MarkdownRenderer';
 import { extractTextFromPdf } from '../utils/pdfParser';
 import GapReportView from './GapReportView';
 import type { GapReport } from './GapReportView';
-// @ts-ignore
-import Aurora from './Aurora';
 
 interface Message {
   messageId: string;
   role: 'USER' | 'AI';
   message: string;
   timestamp: string;
+  imageBase64?: string;
 }
 
 interface ChatAreaProps {
@@ -51,11 +49,16 @@ const promptStarters = [
 
 export default function ChatArea({ sessionId }: ChatAreaProps) {
   const [input, setInput] = useState('');
-  const [model, setModel] = useState<'HUGGING_FACE' | 'OLLAMA'>('OLLAMA');
+  const [model, setModel] = useState<'HUGGING_FACE' | 'OLLAMA'>(() => {
+    return (localStorage.getItem('default-ai-model') as 'HUGGING_FACE' | 'OLLAMA') || 'OLLAMA';
+  });
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
   const [attachedFile, setAttachedFile] = useState<{ name: string; content: string; size: string } | null>(null);
+  const [attachedImage, setAttachedImage] = useState<{ base64: string; previewUrl: string; name?: string } | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
-  const [language, setLanguage] = useState('Java');
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem('default-code-language') || 'Java';
+  });
   const [gapReport, setGapReport] = useState<GapReport | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -89,7 +92,9 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
     onCompleted: async () => {
       setPendingUserMessage(null);
     },
-    onError: async () => {
+    onError: async (err) => {
+      console.error("Failed to send message:", err);
+      alert("Failed to send message: " + err.message);
       setPendingUserMessage(null);
     }
   });
@@ -165,38 +170,7 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
     textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
   }, [input]);
 
-  useLayoutEffect(() => {
-    if (inputWrapperRef.current) {
-      gsap.fromTo(inputWrapperRef.current,
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', delay: 0.1 }
-      );
-    }
-  }, [sessionId]);
 
-  // Animate messages list
-  useLayoutEffect(() => {
-    if (data?.getMessages && listRef.current) {
-      const msgs = listRef.current.querySelectorAll('.message-bubble');
-      gsap.fromTo(msgs,
-        { opacity: 0, y: 15 },
-        { opacity: 1, y: 0, duration: 0.4, stagger: 0.05, ease: 'power2.out', clearProps: 'all' }
-      );
-    }
-  }, [data?.getMessages]);
-
-  // Animate prompt starter cards when empty state resolves
-  useLayoutEffect(() => {
-    const hasMessages = data?.getMessages && data.getMessages.length > 0;
-    if (startersRef.current && !isInitialLoading && !hasMessages && !pendingUserMessage) {
-      const header = startersRef.current.querySelector('.prompt-starters-header');
-      const cards = startersRef.current.querySelectorAll('.prompt-starter-card');
-      gsap.fromTo([header, cards],
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: 'power3.out' }
-      );
-    }
-  }, [sessionId, isInitialLoading, data?.getMessages, pendingUserMessage]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -207,7 +181,7 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
   }, [data?.getMessages, pendingUserMessage]);
 
   const handleSend = () => {
-    if (!input.trim() && !attachedFile) return;
+    if (!input.trim() && !attachedFile && !attachedImage) return;
     
     let finalMessage = input;
     let displayMessage = input;
@@ -222,10 +196,15 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
       displayMessage = input 
         ? `[Attached Document: ${attachedFile.name}]\n\n${input}` 
         : `Analyzed document: ${attachedFile.name}`;
+    } else if (attachedImage && !input.trim()) {
+      finalMessage = "Please review the attached screenshot.";
+      displayMessage = "Please review the attached screenshot.";
     }
     
     setInput('');
     setAttachedFile(null);
+    const sentImageBase64 = attachedImage ? attachedImage.base64 : null;
+    setAttachedImage(null);
     setPendingUserMessage(displayMessage);
 
     saveMessage({
@@ -233,7 +212,8 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
         sessionId,
         role: 'USER',
         message: finalMessage,
-        model: model
+        model: model,
+        imageBase64: sentImageBase64
       }
     });
   };
@@ -249,8 +229,25 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setAttachedImage({
+          base64: result,
+          previewUrl: result,
+          name: file.name
+        });
+      };
+      reader.readAsDataURL(file);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
     if (file.type !== 'application/pdf') {
-      alert('Only PDF files are supported.');
+      alert('Only PDF or Image files are supported.');
       return;
     }
 
@@ -271,6 +268,28 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
       setIsExtracting(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const result = reader.result as string;
+            setAttachedImage({
+              base64: result,
+              previewUrl: result,
+              name: 'Screenshot-' + new Date().toLocaleTimeString().replace(/:/g, '') + '.png'
+            });
+          };
+          reader.readAsDataURL(file);
+        }
+        break;
       }
     }
   };
@@ -303,14 +322,9 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
 
   return (
     <div className="chat-area">
-      <Aurora
-        colorStops={['#6366f1', '#06b6d4', '#6366f1']}
-        amplitude={1.0}
-        blend={0.5}
-      />
       <div className="messages-container">
         {reportData?.getGapReport && (
-          <div className="report-banner glass-panel animate-fade-in">
+          <div className="report-banner glass-panel">
             <div className="banner-content">
               <ShieldAlert size={16} className="banner-icon" />
               <span>A structured code review report is available (Quality Score: {reportData.getGapReport.qualityScore}/100)</span>
@@ -360,6 +374,11 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
                     {msg.role === 'USER' ? <User size={15} /> : <Cpu size={15} />}
                   </div>
                   <div className="message-content">
+                    {msg.imageBase64 && (
+                      <div className="message-image-container">
+                        <img src={msg.imageBase64} alt="User attached screenshot" className="message-image" />
+                      </div>
+                    )}
                     {msg.role === 'USER' ? (
                       <pre className="user-pre">{msg.message}</pre>
                     ) : (
@@ -373,7 +392,7 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
             {pendingUserMessage && (
               <>
                 <div className="message-wrapper user">
-                  <div className="message-bubble animate-slide-up">
+                  <div className="message-bubble">
                     <div className="message-avatar">
                       <User size={15} />
                     </div>
@@ -384,7 +403,7 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
                 </div>
                 
                 <div className="message-wrapper ai">
-                  <div className="message-bubble animate-slide-up thinking-bubble">
+                  <div className="message-bubble thinking-bubble">
                     <div className="message-avatar">
                       <Cpu size={15} />
                     </div>
@@ -402,7 +421,7 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
             
             {isReviewing && !pendingUserMessage && (
               <div className="message-wrapper ai">
-                <div className="message-bubble animate-slide-up thinking-bubble" style={{ borderLeft: '3px solid #6366f1' }}>
+                <div className="message-bubble thinking-bubble" style={{ borderLeft: '3px solid #6366f1' }}>
                   <div className="message-avatar">
                     <Zap size={15} color="#818cf8" />
                   </div>
@@ -464,7 +483,7 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
         </div>
 
         {attachedFile && (
-          <div className="attachment-badge-container animate-fade-in">
+          <div className="attachment-badge-container">
             <div className="attachment-badge">
               <FileText size={14} className="attachment-file-icon" />
               <span className="attachment-file-name">{attachedFile.name}</span>
@@ -481,12 +500,29 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
           </div>
         )}
 
+        {attachedImage && (
+          <div className="attachment-badge-container">
+            <div className="image-preview-badge">
+              <img src={attachedImage.previewUrl} alt="Screenshot preview" className="preview-thumb" />
+              <span className="attachment-file-name">{attachedImage.name || 'Screenshot'}</span>
+              <button 
+                type="button" 
+                className="attachment-remove-btn" 
+                onClick={() => setAttachedImage(null)}
+                title="Remove screenshot"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="chat-input-container glass-panel">
           <input
             type="file"
             ref={fileInputRef}
             onChange={handleFileChange}
-            accept=".pdf"
+            accept=".pdf,image/*"
             style={{ display: 'none' }}
           />
           <button 
@@ -494,7 +530,7 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
             className="attach-button"
             onClick={() => fileInputRef.current?.click()}
             disabled={saving || isExtracting}
-            title="Attach PDF specifications"
+            title="Attach PDF specification or Image screenshot"
           >
             {isExtracting ? (
               <Loader2 className="spinner" size={18} />
@@ -507,13 +543,14 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isExtracting ? "Extracting PDF text..." : "Paste your code or type a message..."}
+            onPaste={handlePaste}
+            placeholder={isExtracting ? "Extracting PDF text..." : "Paste screenshot (Ctrl+V), code, or type a message..."}
             disabled={saving || isExtracting || isReviewing}
             rows={1}
           />
           {input.trim() && (
             <button 
-              className="review-code-btn animate-fade-in"
+              className="review-code-btn"
               onClick={() => handleReviewCode()}
               disabled={isReviewing || saving}
               title="Run structured code review"
@@ -524,7 +561,7 @@ export default function ChatArea({ sessionId }: ChatAreaProps) {
           <button 
             className="send-button" 
             onClick={handleSend}
-            disabled={(!input.trim() && !attachedFile) || saving || isExtracting || isReviewing}
+            disabled={(!input.trim() && !attachedFile && !attachedImage) || saving || isExtracting || isReviewing}
             title="Send chat message"
           >
             {saving ? <Loader2 className="spinner" size={18} /> : <Send size={18} />}

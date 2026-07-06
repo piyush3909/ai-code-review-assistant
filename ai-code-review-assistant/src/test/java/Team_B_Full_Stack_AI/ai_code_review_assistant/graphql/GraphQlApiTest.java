@@ -42,7 +42,6 @@ class GraphQlApiTest {
         chatMessageRepository.deleteAll();
         chatSessionRepository.deleteAll();
         userRepository.deleteAll();
-        authService.getSessionStore().clear();
     }
 
     private ExecutionGraphQlServiceTester getServiceTester() {
@@ -50,10 +49,10 @@ class GraphQlApiTest {
     }
 
     @Test
-    void testLoginMutation() {
-        String document = """
-                mutation Login($name: String!, $email: String!) {
-                    login(name: $name, email: $email) {
+    void testSignupAndLoginMutations() {
+        String signupDoc = """
+                mutation Signup($name: String!, $email: String!, $password: String!) {
+                    signup(name: $name, email: $email, password: $password) {
                         token
                         user {
                             name
@@ -63,13 +62,33 @@ class GraphQlApiTest {
                 }
                 """;
 
-        graphQlTester.document(document)
+        graphQlTester.document(signupDoc)
                 .variable("name", "John Doe")
                 .variable("email", "john@example.com")
+                .variable("password", "password123")
+                .execute()
+                .path("signup.token").entity(String.class).satisfies(token -> assertThat(token).isNotBlank())
+                .path("signup.user.name").entity(String.class).isEqualTo("John Doe")
+                .path("signup.user.email").entity(String.class).isEqualTo("john@example.com");
+
+        String loginDoc = """
+                mutation Login($email: String!, $password: String!) {
+                    login(email: $email, password: $password) {
+                        token
+                        user {
+                            name
+                            email
+                        }
+                    }
+                }
+                """;
+
+        graphQlTester.document(loginDoc)
+                .variable("email", "john@example.com")
+                .variable("password", "password123")
                 .execute()
                 .path("login.token").entity(String.class).satisfies(token -> assertThat(token).isNotBlank())
-                .path("login.user.name").entity(String.class).isEqualTo("John Doe")
-                .path("login.user.email").entity(String.class).isEqualTo("john@example.com");
+                .path("login.user.name").entity(String.class).isEqualTo("John Doe");
     }
 
     @Test
@@ -98,6 +117,7 @@ class GraphQlApiTest {
         UserEntity user = new UserEntity();
         user.setName("John Doe");
         user.setEmail("john@example.com");
+        user.setPassword("password123");
         user = userRepository.save(user);
         final UserEntity finalUser = user;
 
@@ -126,12 +146,14 @@ class GraphQlApiTest {
         UserEntity user1 = new UserEntity();
         user1.setName("User One");
         user1.setEmail("user1@example.com");
+        user1.setPassword("password123");
         user1 = userRepository.save(user1);
         UUID userId1 = user1.getId();
 
         UserEntity user2 = new UserEntity();
         user2.setName("User Two");
         user2.setEmail("user2@example.com");
+        user2.setPassword("password123");
         user2 = userRepository.save(user2);
         UUID userId2 = user2.getId();
 
@@ -208,12 +230,14 @@ class GraphQlApiTest {
         UserEntity user1 = new UserEntity();
         user1.setName("User One");
         user1.setEmail("user1@example.com");
+        user1.setPassword("password123");
         user1 = userRepository.save(user1);
         UUID userId1 = user1.getId();
 
         UserEntity user2 = new UserEntity();
         user2.setName("User Two");
         user2.setEmail("user2@example.com");
+        user2.setPassword("password123");
         user2 = userRepository.save(user2);
 
         String createSessionDoc = """

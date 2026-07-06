@@ -1,8 +1,21 @@
 import { gql } from '@apollo/client';
 
+export const SIGNUP_MUTATION = gql`
+  mutation Signup($name: String!, $email: String!, $password: String!) {
+    signup(name: $name, email: $email, password: $password) {
+      token
+      user {
+        id
+        name
+        email
+      }
+    }
+  }
+`;
+
 export const LOGIN_MUTATION = gql`
-  mutation Login($name: String!, $email: String!) {
-    login(name: $name, email: $email) {
+  mutation Login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
       token
       user {
         id
@@ -33,6 +46,7 @@ export const GET_MESSAGES_QUERY = gql`
       role
       message
       timestamp
+      imageBase64
     }
   }
 `;
@@ -50,13 +64,14 @@ export const CREATE_NEW_SESSION_MUTATION = gql`
 `;
 
 export const SAVE_MESSAGE_MUTATION = gql`
-  mutation SaveMessage($sessionId: ID!, $role: Role!, $message: String!, $model: AiModel) {
-    saveMessage(sessionId: $sessionId, role: $role, message: $message, model: $model) {
+  mutation SaveMessage($sessionId: ID!, $role: Role!, $message: String!, $model: AiModel, $imageBase64: String) {
+    saveMessage(sessionId: $sessionId, role: $role, message: $message, model: $model, imageBase64: $imageBase64) {
       messageId
       sessionId
       role
       message
       timestamp
+      imageBase64
     }
   }
 `;
@@ -67,6 +82,9 @@ export const ME_QUERY = gql`
       id
       name
       email
+      team
+      createdAt
+      lastLogin
     }
   }
 `;

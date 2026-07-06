@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="grad-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b" stop-opacity="0.6" />
+      <stop offset="50%" stop-color="#312e81" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.8" />
+    </linearGradient>
+    <linearGradient id="grad-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+    <linearGradient id="grad-card" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95" />
+    </linearGradient>
+    <linearGradient id="grad-badge" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+    
+    <!-- Glow Filters -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="30" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="glow-sm" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Ambient background glow blobs -->
+  <circle cx="200" cy="150" r="140" fill="#6366f1" opacity="0.18" filter="url(#glow)" />
+  <circle cx="600" cy="450" r="160" fill="#06b6d4" opacity="0.15" filter="url(#glow)" />
+  <circle cx="550" cy="180" r="100" fill="#8b5cf6" opacity="0.12" filter="url(#glow)" />
+
+  <!-- Grid decoration -->
+  <g opacity="0.08" stroke="#ffffff" stroke-width="1">
+    <path d="M 0 100 H 800 M 0 200 H 800 M 0 300 H 800 M 0 400 H 800 M 0 500 H 800" />
+    <path d="M 100 0 V 600 M 200 0 V 600 M 300 0 V 600 M 400 0 V 600 M 500 0 V 600 M 600 0 V 600 M 700 0 V 600" />
+  </g>
+
+  <!-- Main IDE Code Review Window -->
+  <g transform="translate(120, 100)">
+    <!-- Window Shadow & Backdrop -->
+    <rect x="-10" y="-10" width="560" height="380" rx="20" fill="#000000" opacity="0.4" filter="url(#glow-sm)" />
+    <rect x="0" y="0" width="540" height="360" rx="16" fill="url(#grad-card)" stroke="#334155" stroke-width="2" />
+    
+    <!-- Window Header -->
+    <path d="M 0 16 C 0 7.163 7.163 0 16 0 H 524 C 532.837 0 540 7.163 540 16 V 44 H 0 V 16 Z" fill="#1e293b" />
+    <line x1="0" y1="44" x2="540" y2="44" stroke="#334155" stroke-width="1" />
+    
+    <!-- Window Buttons -->
+    <circle cx="24" cy="22" r="6" fill="#ef4444" />
+    <circle cx="44" cy="22" r="6" fill="#f59e0b" />
+    <circle cx="64" cy="22" r="6" fill="#10b981" />
+    
+    <!-- Title -->
+    <rect x="210" y="16" width="120" height="12" rx="6" fill="#475569" opacity="0.5" />
+
+    <!-- Code Editor Content -->
+    <!-- Line numbers -->
+    <g fill="#475569" font-family="monospace" font-size="12">
+      <text x="20" y="80">01</text>
+      <text x="20" y="110">02</text>
+      <text x="20" y="140">03</text>
+      <text x="20" y="170">04</text>
+      <text x="20" y="200">05</text>
+      <text x="20" y="230">06</text>
+      <text x="20" y="260">07</text>
+      <text x="20" y="290">08</text>
+      <text x="20" y="320">09</text>
+    </g>
+
+    <!-- Code syntax bars -->
+    <!-- Line 1 -->
+    <rect x="60" y="72" width="60" height="10" rx="5" fill="#c084fc" />
+    <rect x="130" y="72" width="100" height="10" rx="5" fill="#60a5fa" />
+    <!-- Line 2 -->
+    <rect x="80" y="102" width="140" height="10" rx="5" fill="#e2e8f0" opacity="0.8" />
+    <rect x="230" y="102" width="80" height="10" rx="5" fill="#34d399" />
+    <!-- Line 3 (Highlighted AI Review Line) -->
+    <rect x="50" y="126" width="470" height="28" rx="6" fill="#6366f1" opacity="0.2" stroke="#6366f1" stroke-width="1" stroke-dasharray="4 4" />
+    <rect x="80" y="135" width="90" height="10" rx="5" fill="#f87171" />
+    <rect x="180" y="135" width="160" height="10" rx="5" fill="#e2e8f0" opacity="0.9" />
+    <!-- Line 4 -->
+    <rect x="80" y="162" width="120" height="10" rx="5" fill="#fbbf24" />
+    <!-- Line 5 -->
+    <rect x="60" y="192" width="40" height="10" rx="5" fill="#c084fc" />
+    <!-- Line 6 -->
+    <rect x="60" y="222" width="180" height="10" rx="5" fill="#94a3b8" opacity="0.5" />
+    <!-- Line 7 -->
+    <rect x="80" y="252" width="110" height="10" rx="5" fill="#60a5fa" />
+    <rect x="200" y="252" width="140" height="10" rx="5" fill="#34d399" />
+    <!-- Line 8 -->
+    <rect x="80" y="282" width="90" height="10" rx="5" fill="#e2e8f0" opacity="0.7" />
+    <!-- Line 9 -->
+    <rect x="60" y="312" width="30" height="10" rx="5" fill="#c084fc" />
+  </g>
+
+  <!-- Floating AI Review Analysis Card -->
+  <g transform="translate(420, 260)" filter="url(#glow-sm)">
+    <rect x="0" y="0" width="280" height="160" rx="16" fill="#1e293b" stroke="#06b6d4" stroke-width="2" />
+    
+    <!-- Card Header -->
+    <rect x="16" y="16" width="32" height="32" rx="8" fill="url(#grad-accent)" />
+    <!-- Sparkle Icon in Header -->
+    <path d="M32 24 L34 30 L40 32 L34 34 L32 40 L30 34 L24 32 L30 30 Z" fill="#ffffff" />
+    
+    <text x="60" y="37" fill="#ffffff" font-family="system-ui, sans-serif" font-weight="bold" font-size="15">AI Code Inspector</text>
+    <circle cx="245" cy="32" r="5" fill="#10b981" />
+
+    <!-- Analysis Content -->
+    <rect x="16" y="64" width="248" height="12" rx="6" fill="#e2e8f0" opacity="0.9" />
+    <rect x="16" y="86" width="190" height="12" rx="6" fill="#94a3b8" opacity="0.6" />
+    
+    <!-- Action Tag -->
+    <rect x="16" y="114" width="120" height="28" rx="14" fill="#10b981" opacity="0.2" stroke="#10b981" stroke-width="1" />
+    <circle cx="32" cy="128" r="6" fill="#10b981" />
+    <path d="M 30 128 L 32 130 L 35 126" stroke="#ffffff" stroke-width="1.5" fill="none" />
+    <text x="46" y="133" fill="#10b981" font-family="system-ui, sans-serif" font-weight="600" font-size="12">Optimized &amp; Safe</text>
+  </g>
+
+  <!-- Floating Quality Score Badge -->
+  <g transform="translate(60, 360)" filter="url(#glow-sm)">
+    <rect x="0" y="0" width="180" height="90" rx="16" fill="#0f172a" stroke="#6366f1" stroke-width="2" />
+    <text x="20" y="32" fill="#94a3b8" font-family="system-ui, sans-serif" font-weight="600" font-size="13">QUALITY SCORE</text>
+    <text x="20" y="68" fill="url(#grad-accent)" font-family="system-ui, sans-serif" font-weight="800" font-size="32">98</text>
+    <text x="68" y="64" fill="#34d399" font-family="system-ui, sans-serif" font-weight="bold" font-size="14">/ 100</text>
+    <path d="M 130 50 L 140 40 L 155 45" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <polyline points="148,38 157,44 153,53" fill="#34d399" />
+  </g>
+
+  <!-- Connecting Nodes / Dots -->
+  <g fill="url(#grad-accent)">
+    <circle cx="410" cy="240" r="6" />
+    <circle cx="240" cy="360" r="6" />
+    <circle cx="580" cy="120" r="8" opacity="0.7" />
+    <circle cx="100" cy="150" r="5" opacity="0.5" />
+  </g>
+</svg>
