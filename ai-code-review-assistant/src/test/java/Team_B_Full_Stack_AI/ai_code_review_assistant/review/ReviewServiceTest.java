@@ -73,6 +73,7 @@ class ReviewServiceTest {
         existing.setSuggestedActions(List.of("old action"));
         gapReportRepository.save(existing);
 
+<<<<<<< HEAD
         String aiResponse = """
         {"qualityScore": 91, "summary": "Looks solid", "issues": [], "suggestedActions": ["Add tests"]}
         """;
@@ -86,6 +87,11 @@ class ReviewServiceTest {
         when(mockMessage.getContent()).thenReturn(aiResponse);
 
         when(openAiChatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
+=======
+        String aiResponse = "qualityScore: 91\nsummary: Looks solid\nissues: []\nsuggestedActions: [\"Add tests\"]";
+        when(openAiChatModel.call(any(Prompt.class)))
+                .thenReturn(new org.springframework.ai.chat.model.ChatResponse(List.of(new Generation(aiResponse))));
+>>>>>>> 5c4d09682ac8ee930124f8774042543cca05e0b6
 
         GapReportEntity result = reviewService.reviewCode(sessionId, "public class Test {}", "Java", AiModel.HUGGING_FACE);
 
