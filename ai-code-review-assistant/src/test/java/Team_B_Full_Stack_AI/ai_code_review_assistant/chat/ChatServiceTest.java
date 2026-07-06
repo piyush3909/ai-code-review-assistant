@@ -132,6 +132,6 @@ class ChatServiceTest {
 
         assertThatThrownBy(() -> chatService.saveMessage(sessionId, Role.USER, ""))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Message content cannot be null or empty");
+                .hasMessageContaining("Message content or attached image cannot be null or empty");
     }
 }

@@ -56,15 +56,18 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatMessageEntity saveMessage(UUID sessionId, Role role, String messageContent) {
+    public ChatMessageEntity saveMessage(UUID sessionId, Role role, String messageContent, String imageBase64) {
         if (sessionId == null) {
             throw new IllegalArgumentException("Session ID cannot be null");
         }
         if (role == null) {
             throw new IllegalArgumentException("Role cannot be null");
         }
+        if ((messageContent == null || messageContent.trim().isEmpty()) && (imageBase64 == null || imageBase64.trim().isEmpty())) {
+            throw new IllegalArgumentException("Message content or attached image cannot be null or empty");
+        }
         if (messageContent == null || messageContent.trim().isEmpty()) {
-            throw new IllegalArgumentException("Message content cannot be null or empty");
+            messageContent = "Please review the attached screenshot.";
         }
 
         ChatSessionEntity session = chatSessionRepository.findById(sessionId)
@@ -78,8 +81,14 @@ public class ChatService {
         chatMessage.setSessionId(sessionId);
         chatMessage.setRole(role);
         chatMessage.setMessage(messageContent.trim());
+        chatMessage.setImageBase64(imageBase64);
         chatMessage.setTimestamp(LocalDateTime.now());
         return chatMessageRepository.save(chatMessage);
+    }
+
+    @Transactional
+    public ChatMessageEntity saveMessage(UUID sessionId, Role role, String messageContent) {
+        return saveMessage(sessionId, role, messageContent, null);
     }
 
     @Transactional
@@ -87,7 +96,7 @@ public class ChatService {
         if (message == null) {
             throw new IllegalArgumentException("Message cannot be null");
         }
-        return saveMessage(message.getSessionId(), message.getRole(), message.getMessage());
+        return saveMessage(message.getSessionId(), message.getRole(), message.getMessage(), message.getImageBase64());
     }
 
     public Optional<ChatSessionEntity> getSessionById(UUID sessionId) {

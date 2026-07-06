@@ -11,3 +11,5 @@ public interface GapReportRepository extends JpaRepository<GapReportEntity, UUID
     Optional<GapReportEntity> findBySessionId(UUID sessionId);
     void deleteBySessionId(UUID sessionId);
 }
+
+

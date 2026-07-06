@@ -21,8 +21,13 @@ public class AuthController {
     }
 
     @MutationMapping
-    public Session login(@Argument String name, @Argument String email) {
-        return authService.login(name, email);
+    public Session signup(@Argument String name, @Argument String email, @Argument String password) {
+        return authService.signup(name, email, password);
+    }
+
+    @MutationMapping
+    public Session login(@Argument String email, @Argument String password) {
+        return authService.login(email, password);
     }
 
     @QueryMapping

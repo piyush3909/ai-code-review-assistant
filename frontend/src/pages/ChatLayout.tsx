@@ -1,19 +1,22 @@
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@apollo/client';
 import Sidebar from '../components/Sidebar';
 import ChatArea from '../components/ChatArea';
-// @ts-ignore
-import Aurora from '../components/Aurora';
 import { CREATE_NEW_SESSION_MUTATION, GET_SESSIONS_QUERY } from '../graphql/operations';
 import { Code2, Plus, Loader2 } from 'lucide-react';
-import gsap from 'gsap';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import ProfileModal from '../components/ProfileModal';
+import GuidelinesModal from '../components/GuidelinesModal';
 import './ChatLayout.css';
 
 export default function ChatLayout() {
   const navigate = useNavigate();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const emptyStateRef = useRef<HTMLDivElement>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showGuidelinesModal, setShowGuidelinesModal] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   
   const userId = localStorage.getItem('userId');
 
@@ -31,20 +34,6 @@ export default function ChatLayout() {
     }
   }, [navigate]);
 
-  useLayoutEffect(() => {
-    if (!activeSessionId && emptyStateRef.current) {
-      const logo = emptyStateRef.current.querySelector('.empty-state-logo');
-      const h2 = emptyStateRef.current.querySelector('h2');
-      const p = emptyStateRef.current.querySelector('p');
-      const btn = emptyStateRef.current.querySelector('.empty-state-btn');
-      
-      gsap.fromTo([logo, h2, p, btn],
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.6, stagger: 0.12, ease: 'power3.out' }
-      );
-    }
-  }, [activeSessionId]);
-
   const handleStartNewReview = () => {
     if (!userId || isCreating) return;
     createSession({
@@ -56,22 +45,25 @@ export default function ChatLayout() {
   };
 
   return (
-    <div className="chat-layout">
+    <div className="page-container">
+      <Header 
+        onOpenProfile={() => setShowProfileModal(true)} 
+        onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+      />
+      <div className="chat-layout">
       <Sidebar 
         activeSessionId={activeSessionId} 
         onSelectSession={setActiveSessionId} 
+        onOpenProfile={() => setShowProfileModal(true)}
+        isMobileOpen={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
       <div className="chat-main">
         {activeSessionId ? (
           <ChatArea key={activeSessionId} sessionId={activeSessionId} />
         ) : (
           <div className="empty-state">
-            <Aurora
-              colorStops={['#6366f1', '#06b6d4', '#6366f1']}
-              amplitude={1.0}
-              blend={0.5}
-            />
-            <div ref={emptyStateRef} className="empty-state-content">
+            <div className="empty-state-content">
               <div className="empty-state-logo">
                 <Code2 size={36} />
               </div>
@@ -93,6 +85,11 @@ export default function ChatLayout() {
           </div>
         )}
       </div>
+      </div>
+      <Footer onOpenGuidelines={() => setShowGuidelinesModal(true)} />
+      {showProfileModal && <ProfileModal onClose={() => setShowProfileModal(false)} />}
+      {showGuidelinesModal && <GuidelinesModal onClose={() => setShowGuidelinesModal(false)} />}
     </div>
   );
 }
+

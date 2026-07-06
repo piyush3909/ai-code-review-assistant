@@ -1,6 +1,5 @@
-import { useState, useLayoutEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { ShieldAlert, Zap, FileCode, HelpCircle, ChevronDown, ChevronUp, CheckCircle, AlertTriangle, Info, ArrowLeft, RefreshCw, Sparkles, Copy, X } from 'lucide-react';
-import gsap from 'gsap';
 import './GapReportView.css';
 import { useMutation } from '@apollo/client';
 import { FIX_CODE_MUTATION } from '../graphql/operations';
@@ -64,24 +63,7 @@ export default function GapReportView({ report, onBack, onReRun, isReRunning, mo
     }
   };
 
-  useLayoutEffect(() => {
-    if (!containerRef.current) return;
-    const header = containerRef.current.querySelector('.report-header-card');
-    const cards = containerRef.current.querySelectorAll('.issue-item-card');
-    const actions = containerRef.current.querySelector('.suggested-actions-card');
 
-    gsap.fromTo([header, actions],
-      { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, duration: 0.6, stagger: 0.15, ease: 'power3.out' }
-    );
-
-    if (cards.length > 0) {
-      gsap.fromTo(cards,
-        { opacity: 0, x: -20 },
-        { opacity: 1, x: 0, duration: 0.5, stagger: 0.08, ease: 'power2.out', delay: 0.2 }
-      );
-    }
-  }, [report.reportId]);
 
   const getScoreColorClass = (score: number) => {
     if (score >= 80) return 'score-green';

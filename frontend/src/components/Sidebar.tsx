@@ -1,9 +1,8 @@
-import { useState, useRef, useLayoutEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_SESSIONS_QUERY, CREATE_NEW_SESSION_MUTATION, DELETE_SESSION_MUTATION } from '../graphql/operations';
-import { Plus, MessageSquare, LogOut, Code2, Trash2 } from 'lucide-react';
+import { Plus, MessageSquare, LogOut, Code2, Trash2, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import gsap from 'gsap';
 import './Sidebar.css';
 
 interface Session {
@@ -14,13 +13,19 @@ interface Session {
 interface SidebarProps {
   activeSessionId: string | null;
   onSelectSession: (id: string | null) => void;
+  onOpenProfile?: () => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
-export default function Sidebar({ activeSessionId, onSelectSession }: SidebarProps) {
+export default function Sidebar({ activeSessionId, onSelectSession, onOpenProfile, isMobileOpen, onCloseMobile }: SidebarProps) {
   const userId = localStorage.getItem('userId');
   const userName = localStorage.getItem('userName');
   const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem('sidebar-collapsed') === 'true';
+  });
   const containerRef = useRef<HTMLDivElement>(null);
   const sessionsRef = useRef<HTMLDivElement>(null);
 
@@ -34,6 +39,7 @@ export default function Sidebar({ activeSessionId, onSelectSession }: SidebarPro
       refetch();
       onSelectSession(res.createNewSession.sessionId);
       setIsCreating(false);
+      if (onCloseMobile) onCloseMobile();
     }
   });
 
@@ -43,27 +49,11 @@ export default function Sidebar({ activeSessionId, onSelectSession }: SidebarPro
     }
   });
 
-  useLayoutEffect(() => {
-    if (!containerRef.current) return;
-    const header = containerRef.current.querySelector('.sidebar-header');
-    const footer = containerRef.current.querySelector('.sidebar-footer');
-    
-    gsap.fromTo([header, footer],
-      { opacity: 0, x: -20 },
-      { opacity: 1, x: 0, duration: 0.6, stagger: 0.2, ease: 'power3.out' }
-    );
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!sessionsRef.current || !data?.getSessions) return;
-    const items = sessionsRef.current.querySelectorAll('.session-item-wrapper');
-    if (items.length > 0) {
-      gsap.fromTo(items,
-        { opacity: 0, x: -15 },
-        { opacity: 1, x: 0, duration: 0.4, stagger: 0.05, ease: 'power2.out', clearProps: 'all' }
-      );
-    }
-  }, [data?.getSessions]);
+  const toggleCollapse = () => {
+    const nextState = !isCollapsed;
+    setIsCollapsed(nextState);
+    localStorage.setItem('sidebar-collapsed', String(nextState));
+  };
 
   const handleNewChat = () => {
     if (!userId) return;
@@ -74,6 +64,11 @@ export default function Sidebar({ activeSessionId, onSelectSession }: SidebarPro
         title: `Code Review ${new Date().toLocaleDateString()}`
       }
     });
+  };
+
+  const handleSelectSession = (id: string | null) => {
+    onSelectSession(id);
+    if (onCloseMobile) onCloseMobile();
   };
 
   const handleDeleteSession = (e: React.MouseEvent, sessionIdToDelete: string) => {
@@ -94,56 +89,94 @@ export default function Sidebar({ activeSessionId, onSelectSession }: SidebarPro
   };
 
   return (
-    <div ref={containerRef} className="sidebar glass-panel">
-      <div className="sidebar-header">
-        <div className="sidebar-brand">
-          <Code2 className="brand-icon" size={24} />
-          <span>AI Assistant</span>
+    <>
+      {isMobileOpen && (
+        <div 
+          className="sidebar-backdrop" 
+          onClick={onCloseMobile}
+          aria-hidden="true"
+        />
+      )}
+      <div ref={containerRef} className={`sidebar glass-panel ${isCollapsed && !isMobileOpen ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-brand-row">
+            {(!isCollapsed || isMobileOpen) && (
+              <div className="sidebar-brand">
+                <Code2 className="brand-icon" size={24} />
+                <span>AI Assistant</span>
+              </div>
+            )}
+            {isMobileOpen ? (
+              <button 
+                className="sidebar-top-toggle-btn"
+                onClick={onCloseMobile}
+                title="Close menu"
+              >
+                <X size={18} />
+              </button>
+            ) : (
+              <button 
+                className="sidebar-top-toggle-btn"
+                onClick={toggleCollapse}
+                title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              >
+                {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+              </button>
+            )}
+          </div>
+          <button 
+            className="new-chat-btn" 
+            onClick={handleNewChat}
+            disabled={isCreating}
+            title={isCollapsed && !isMobileOpen ? "New Review" : undefined}
+          >
+            <Plus size={18} />
+            {(!isCollapsed || isMobileOpen) && <span>New Review</span>}
+          </button>
         </div>
-        <button 
-          className="new-chat-btn" 
-          onClick={handleNewChat}
-          disabled={isCreating}
-        >
-          <Plus size={18} />
-          <span>New Review</span>
-        </button>
-      </div>
 
-      <div ref={sessionsRef} className="sidebar-sessions">
-        {loading ? (
-          <div className="loading-sessions">Loading...</div>
-        ) : (
-          data?.getSessions?.map((session: Session) => (
-            <div key={session.sessionId} className="session-item-wrapper">
-              <button
-                className={`session-item ${activeSessionId === session.sessionId ? 'active' : ''}`}
-                onClick={() => onSelectSession(session.sessionId)}
-              >
-                <MessageSquare size={16} />
-                <span className="session-title">{session.title}</span>
-              </button>
-              <button
-                className="session-delete-btn"
-                onClick={(e) => handleDeleteSession(e, session.sessionId)}
-                title="Delete review"
-              >
-                <Trash2 size={13} />
-              </button>
+
+        <div ref={sessionsRef} className="sidebar-sessions">
+          {loading ? (
+            <div className="loading-sessions">{(isCollapsed && !isMobileOpen) ? "..." : "Loading..."}</div>
+          ) : (
+            data?.getSessions?.map((session: Session) => (
+              <div key={session.sessionId} className="session-item-wrapper">
+                <button
+                  className={`session-item ${activeSessionId === session.sessionId ? 'active' : ''}`}
+                  onClick={() => handleSelectSession(session.sessionId)}
+                  title={isCollapsed && !isMobileOpen ? session.title : undefined}
+                >
+                  <MessageSquare size={16} />
+                  {(!isCollapsed || isMobileOpen) && <span className="session-title">{session.title}</span>}
+                </button>
+                {(!isCollapsed || isMobileOpen) && (
+                  <button
+                    className="session-delete-btn"
+                    onClick={(e) => handleDeleteSession(e, session.sessionId)}
+                    title="Delete review"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="sidebar-footer">
+          <div className="user-info" onClick={onOpenProfile} title="View & Edit Profile Preferences">
+            <div className="user-avatar">
+              {userName?.charAt(0).toUpperCase()}
             </div>
-          ))
-        )}
-      </div>
-
-      <div className="sidebar-footer">
-        <div className="user-info">
-          <div className="user-avatar">{userName?.charAt(0).toUpperCase()}</div>
-          <span className="user-name">{userName}</span>
+            {(!isCollapsed || isMobileOpen) && <span className="user-name">{userName}</span>}
+          </div>
+          <button className="logout-btn" onClick={handleLogout} title="Logout">
+            <LogOut size={18} />
+          </button>
         </div>
-        <button className="logout-btn" onClick={handleLogout} title="Logout">
-          <LogOut size={18} />
-        </button>
       </div>
-    </div>
+    </>
   );
 }
+

@@ -40,6 +40,9 @@ public class ChatMessageEntity {
     @Column(nullable = false)
     private LocalDateTime timestamp;
 
+    @Column(name = "image_base64", columnDefinition = "TEXT")
+    private String imageBase64;
+
     @PrePersist
     protected void onCreate() {
         timestamp = LocalDateTime.now();

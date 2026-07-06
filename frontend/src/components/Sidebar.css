@@ -8,6 +8,7 @@
   border-radius: 0;
   box-shadow: none;
   position: relative;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-header {
@@ -170,6 +171,15 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+  border-radius: var(--radius-md);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.user-info:hover {
+  background: var(--bg-surface-hover);
+  transform: translateY(-1px);
 }
 
 .user-avatar {
@@ -203,3 +213,138 @@
   color: var(--danger);
   background: var(--danger-muted);
 }
+
+/* ── Sidebar brand row & toggle ── */
+.sidebar-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.sidebar-top-toggle-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.sidebar-top-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: scale(1.05);
+}
+
+/* ── Collapsed Sidebar ── */
+.sidebar.collapsed {
+  width: 68px;
+}
+
+.sidebar.collapsed .sidebar-header {
+  padding: 1.25rem 0.5rem;
+  align-items: center;
+}
+
+.sidebar.collapsed .sidebar-brand-row {
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-brand {
+  gap: 0;
+}
+
+.sidebar.collapsed .new-chat-btn {
+  padding: 0.6rem;
+  justify-content: center;
+}
+
+.sidebar.collapsed .session-item {
+  padding: 0.55rem;
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  padding: 0.875rem 0.5rem;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.sidebar.collapsed .user-info {
+  justify-content: center;
+}
+
+/* ── Backdrop Overlay for Mobile Drawer ── */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-overlay, rgba(0, 0, 0, 0.6));
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Tablet & Mobile Off-Canvas Drawer Behavior ── */
+@media (max-width: 1023px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1000;
+    width: 280px !important;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: var(--shadow-lg);
+    border-right: 1px solid var(--border-strong);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  /* When mobile drawer is open, never treat as collapsed */
+  .sidebar.mobile-open .sidebar-header {
+    padding: 1.25rem 1rem;
+    align-items: stretch;
+  }
+
+  .sidebar.mobile-open .sidebar-brand-row {
+    justify-content: space-between;
+  }
+
+  .sidebar.mobile-open .new-chat-btn {
+    padding: 0.6rem 0.75rem;
+    justify-content: flex-start;
+  }
+
+  .sidebar.mobile-open .session-item {
+    padding: 0.55rem 2.2rem 0.55rem 0.7rem;
+    justify-content: flex-start;
+  }
+
+  .sidebar.mobile-open .sidebar-footer {
+    padding: 0.875rem 1rem;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .sidebar.mobile-open .user-info {
+    justify-content: flex-start;
+  }
+}
+
