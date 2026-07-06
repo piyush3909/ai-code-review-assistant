@@ -74,7 +74,7 @@ class ReviewServiceTest {
 
         String aiResponse = "qualityScore: 91\nsummary: Looks solid\nissues: []\nsuggestedActions: [\"Add tests\"]";
         when(openAiChatModel.call(any(Prompt.class)))
-                .thenReturn(new org.springframework.ai.chat.model.ChatResponse(List.of(new Generation(new AssistantMessage(aiResponse)))));
+                .thenReturn(new org.springframework.ai.chat.model.ChatResponse(List.of(new Generation(aiResponse))));
 
         GapReportEntity result = reviewService.reviewCode(sessionId, "public class Test {}", "Java", AiModel.HUGGING_FACE);
 
