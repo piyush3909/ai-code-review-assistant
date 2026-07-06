@@ -6,10 +6,11 @@ import Team_B_Full_Stack_AI.ai_code_review_assistant.review.repository.GapReport
 import Team_B_Full_Stack_AI.ai_code_review_assistant.review.service.ReviewService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import static org.mockito.Mockito.mock;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -72,9 +73,19 @@ class ReviewServiceTest {
         existing.setSuggestedActions(List.of("old action"));
         gapReportRepository.save(existing);
 
-        String aiResponse = "qualityScore: 91\nsummary: Looks solid\nissues: []\nsuggestedActions: [\"Add tests\"]";
-        when(openAiChatModel.call(any(Prompt.class)))
-                .thenReturn(new org.springframework.ai.chat.model.ChatResponse(List.of(new Generation(new AssistantMessage(aiResponse)))));
+        String aiResponse = """
+        {"qualityScore": 91, "summary": "Looks solid", "issues": [], "suggestedActions": ["Add tests"]}
+        """;
+
+        ChatResponse mockChatResponse = mock(ChatResponse.class);
+        Generation mockGeneration = mock(Generation.class);
+        AssistantMessage mockMessage = mock(AssistantMessage.class);
+
+        when(mockChatResponse.getResult()).thenReturn(mockGeneration);
+        when(mockGeneration.getOutput()).thenReturn(mockMessage);
+        when(mockMessage.getContent()).thenReturn(aiResponse);
+
+        when(openAiChatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
 
         GapReportEntity result = reviewService.reviewCode(sessionId, "public class Test {}", "Java", AiModel.HUGGING_FACE);
 
